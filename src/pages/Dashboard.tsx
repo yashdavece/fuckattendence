@@ -28,7 +28,7 @@ const subjects = [
   { name: 'CN', fullName: 'Computer Networks', icon: Monitor, color: 'bg-blue-500' },
   { name: 'ADA', fullName: 'Algorithm Design & Analysis', icon: Code, color: 'bg-green-500' },
   { name: 'SE', fullName: 'Software Engineering', icon: BookOpen, color: 'bg-purple-500' },
-  { name: 'PE', fullName: 'Physical Education', icon: Dumbbell, color: 'bg-orange-500' },
+  { name: 'PE', fullName: 'Proffesional Ethics', icon: Book, color: 'bg-orange-500' },
   { name: 'CPDP', fullName: 'Career & Personality Development', icon: Users, color: 'bg-pink-500' },
   { name: 'CS/PYTHON', fullName: 'Computer Science/Python (Elective)', icon: Cpu, color: 'bg-indigo-500' }
 ];
