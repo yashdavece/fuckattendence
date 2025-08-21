@@ -122,13 +122,13 @@ const Profile = () => {
 
       if (error) throw error;
 
+      // Update local state immediately
+      setAttendanceRecords(prev => prev.filter(record => record.id !== selectedRecord.id));
+
       toast({
         title: "Success",
         description: "Attendance record deleted successfully",
       });
-
-      // Refresh the attendance data
-      fetchData();
     } catch (error: any) {
       toast({
         title: "Error",
