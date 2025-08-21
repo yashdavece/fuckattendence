@@ -59,9 +59,9 @@ const Profile = () => {
     }
   }, [user]);
 
+
   const fetchData = async () => {
     if (!user) return;
-    
     try {
       // Fetch profile
       const { data: profileData, error: profileError } = await supabase
@@ -69,7 +69,6 @@ const Profile = () => {
         .select('name, user_id')
         .eq('user_id', user.id)
         .single();
-
       if (profileError) throw profileError;
       setProfile(profileData);
 
@@ -79,10 +78,11 @@ const Profile = () => {
         .select('id, subject, date')
         .eq('student_id', user.id)
         .order('date', { ascending: false });
-
       if (attendanceError) throw attendanceError;
+      console.log('Fetched attendance:', attendanceData);
       setAttendanceRecords(attendanceData || []);
     } catch (error: any) {
+      console.error('Fetch error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to fetch data",
@@ -110,26 +110,24 @@ const Profile = () => {
     });
   };
 
+
   const handleDeleteAttendance = async () => {
     if (!selectedRecord) return;
-
     try {
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('attendance')
         .delete()
         .eq('id', selectedRecord.id)
         .eq('student_id', user?.id); // Extra security check
-
+      console.log('Delete result:', { error, data });
       if (error) throw error;
-
-      // Update local state immediately
       setAttendanceRecords(prev => prev.filter(record => record.id !== selectedRecord.id));
-
       toast({
         title: "Success",
         description: "Attendance record deleted successfully",
       });
     } catch (error: any) {
+      console.error('Delete error:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete attendance record",
