@@ -4,12 +4,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   ArrowLeft, 
   Calendar, 
   BookOpen, 
   TrendingUp,
-  User
+  User,
+  Trash2
 } from 'lucide-react';
 import {
   Table,
@@ -39,6 +50,8 @@ const Profile = () => {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -95,6 +108,37 @@ const Profile = () => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleDeleteAttendance = async () => {
+    if (!selectedRecord) return;
+
+    try {
+      const { error } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('id', selectedRecord.id)
+        .eq('student_id', user?.id); // Extra security check
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Attendance record deleted successfully",
+      });
+
+      // Refresh the attendance data
+      fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete attendance record",
+        variant: "destructive",
+      });
+    } finally {
+      setSelectedRecord(null);
+      setDeleteDialogOpen(false);
+    }
   };
 
   const attendanceStats = getAttendanceStats();
@@ -197,6 +241,7 @@ const Profile = () => {
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Subject</TableHead>
+                      <TableHead className="w-[100px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -206,10 +251,41 @@ const Profile = () => {
                           {formatDate(record.date)}
                         </TableCell>
                         <TableCell>{record.subject}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedRecord(record);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-destructive hover:text-destructive/90"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+
+                {/* Delete Confirmation Dialog */}
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Attendance Record</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this attendance record? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={() => setSelectedRecord(null)}>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteAttendance} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             ) : (
               <div className="text-center py-12">
