@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -43,6 +44,42 @@ interface Profile {
   user_id: string;
 }
 
+const GROUPS = [
+  { label: 'TY CE-1', value: 'TY CE-1' },
+  { label: 'TY CE-2', value: 'TY CE-2' },
+  { label: 'TY CE-3', value: 'TY CE-3' },
+];
+
+const SUBJECT_TOTALS: Record<string, Record<string, number>> = {
+  'TY CE-1': {
+    'Analysis & Design of Algorithm (ADA)': 22,
+    'Computer Network (CN)': 21,
+    'Software Engineering (SE)': 16,
+    'Elective (PDS/CS)': 11,
+    'Professional Ethics (PEM)': 16,
+    'Contributor Personality Dev Pr (CPDP)': 16,
+    'Design Engineering (DE)': 0,
+  },
+  'TY CE-2': {
+    'Analysis & Design of Algorithm (ADA)': 22,
+    'Computer Network (CN)': 22,
+    'Software Engineering (SE)': 15,
+    'Elective (PDS/CS)': 11,
+    'Professional Ethics (PEM)': 16,
+    'Contributor Personality Dev Pr (CPDP)': 10,
+    'Design Engineering (DE)': 0,
+  },
+  'TY CE-3': {
+    'Analysis & Design of Algorithm (ADA)': 21,
+    'Computer Network (CN)': 22,
+    'Software Engineering (SE)': 16,
+    'Elective (PDS/CS)': 11,
+    'Professional Ethics (PEM)': 12,
+    'Contributor Personality Dev Pr (CPDP)': 10,
+    'Design Engineering (DE)': 0,
+  },
+};
+
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
@@ -50,6 +87,7 @@ const Profile = () => {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [group, setGroup] = useState<string>('TY CE-1');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
@@ -150,6 +188,13 @@ const Profile = () => {
     return stats;
   })();
 
+  // Calculate percentage for each subject
+  const attendancePercentages = Object.entries(attendanceStats).reduce((acc, [subject, attended]) => {
+    const total = SUBJECT_TOTALS[group]?.[subject] || 0;
+    acc[subject] = total > 0 ? Math.round((attended / total) * 100) : null;
+    return acc;
+  }, {} as Record<string, number | null>);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
@@ -202,7 +247,7 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Attendance Statistics */}
+        {/* Attendance Statistics & Group Selection */}
         <Card className="mb-8 bg-white/80 backdrop-blur-sm border-0">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -211,18 +256,37 @@ const Profile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex items-center gap-4">
+              <span className="font-medium">Select Your Group:</span>
+              <Select value={group} onValueChange={setGroup}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Select group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GROUPS.map(g => (
+                    <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {Object.keys(attendanceStats).length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {Object.entries(attendanceStats).map(([subject, count]) => (
-                  <div key={subject} className="text-center p-4 bg-muted/50 rounded-lg">
-                    <BookOpen className="h-6 w-6 mx-auto mb-2 text-primary" />
-                    <p className="font-semibold">{subject}</p>
-                    <p className="text-2xl font-bold text-primary">{count}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {count === 1 ? 'class' : 'classes'}
-                    </p>
-                  </div>
-                ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(SUBJECT_TOTALS[group]).map(([subject, total]) => {
+                  const attended = attendanceStats[subject] || 0;
+                  const percent = total > 0 ? Math.round((attended / total) * 100) : null;
+                  return (
+                    <div key={subject} className="text-center p-4 bg-muted/50 rounded-lg">
+                      <BookOpen className="h-6 w-6 mx-auto mb-2 text-primary" />
+                      <p className="font-semibold">{subject}</p>
+                      <p className="text-2xl font-bold text-primary">{attended} / {total}</p>
+                      {percent !== null ? (
+                        <p className="text-lg font-semibold text-green-700">{percent}%</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No lectures scheduled</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">
