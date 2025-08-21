@@ -198,6 +198,13 @@ const Profile = () => {
         title: "Success",
         description: "Attendance record deleted successfully",
       });
+      // Ensure authoritative refresh from DB so summary percentages stay consistent
+      try {
+        await fetchData();
+        console.log('Refetched attendance after delete');
+      } catch (e) {
+        console.warn('Error refetching after delete', e);
+      }
     } catch (error: any) {
       console.error('Delete error:', error);
       toast({
