@@ -141,7 +141,15 @@ const Profile = () => {
     }
   };
 
-  const attendanceStats = getAttendanceStats();
+
+  // Always calculate stats from the latest attendanceRecords
+  const attendanceStats = (() => {
+    const stats: { [key: string]: number } = {};
+    attendanceRecords.forEach(record => {
+      stats[record.subject] = (stats[record.subject] || 0) + 1;
+    });
+    return stats;
+  })();
 
   if (loading) {
     return (
