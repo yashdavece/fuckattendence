@@ -113,6 +113,7 @@ const Profile = () => {
 
   const handleDeleteAttendance = async () => {
     if (!selectedRecord) return;
+    console.log('Attempting to delete:', { selectedRecord, userId: user?.id });
     try {
       const { error, data } = await supabase
         .from('attendance')
