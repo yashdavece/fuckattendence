@@ -147,8 +147,10 @@ const Profile = () => {
         .eq('student_id', user.id)
         .order('date', { ascending: false });
       if (attendanceError) throw attendanceError;
-      console.log('Fetched attendance:', attendanceData);
-      setAttendanceRecords(attendanceData || []);
+  console.log('Fetched attendance:', attendanceData);
+  setAttendanceRecords(attendanceData || []);
+  // extra debug
+  console.log('Setting attendanceRecords with', (attendanceData || []).length, 'items');
     } catch (error: any) {
       console.error('Fetch error:', error);
       toast({
@@ -226,6 +228,13 @@ const Profile = () => {
     acc[subject] = total > 0 ? Math.round((attended / total) * 100) : null;
     return acc;
   }, {} as Record<string, number | null>);
+
+  // Debug logging when records or group change
+  useEffect(() => {
+    console.log('attendanceRecords changed:', attendanceRecords);
+    console.log('attendanceStats computed:', attendanceStats);
+    console.log('attendancePercentages computed for group', group, attendancePercentages);
+  }, [attendanceRecords, group]);
 
   if (loading) {
     return (
