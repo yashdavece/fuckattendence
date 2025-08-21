@@ -80,6 +80,15 @@ const SUBJECT_TOTALS: Record<string, Record<string, number>> = {
   },
 };
 
+const SUBJECT_CODE_MAP: Record<string, string> = {
+  'CN': 'Computer Network (CN)',
+  'ADA': 'Analysis & Design of Algorithm (ADA)',
+  'SE': 'Software Engineering (SE)',
+  'PE': 'Professional Ethics (PEM)',
+  'CPDP': 'Contributor Personality Dev Pr (CPDP)',
+  'CS/PYTHON': 'Elective (PDS/CS)',
+};
+
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
@@ -155,7 +164,8 @@ const Profile = () => {
   const getAttendanceStats = () => {
     const stats: { [key: string]: number } = {};
     attendanceRecords.forEach(record => {
-      stats[record.subject] = (stats[record.subject] || 0) + 1;
+      const key = SUBJECT_CODE_MAP[record.subject] || record.subject;
+      stats[key] = (stats[key] || 0) + 1;
     });
     return stats;
   };
@@ -204,7 +214,8 @@ const Profile = () => {
   const attendanceStats = (() => {
     const stats: { [key: string]: number } = {};
     attendanceRecords.forEach(record => {
-      stats[record.subject] = (stats[record.subject] || 0) + 1;
+      const key = SUBJECT_CODE_MAP[record.subject] || record.subject;
+      stats[key] = (stats[key] || 0) + 1;
     });
     return stats;
   })();
@@ -336,7 +347,7 @@ const Profile = () => {
                         <TableCell className="font-medium">
                           {formatDate(record.date)}
                         </TableCell>
-                        <TableCell>{record.subject}</TableCell>
+                        <TableCell>{SUBJECT_CODE_MAP[record.subject] || record.subject}</TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
