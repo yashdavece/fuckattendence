@@ -97,6 +97,27 @@ const Profile = () => {
     }
   }, [user]);
 
+  // Realtime subscription to attendance changes for the current user
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase.channel('public:attendance')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `student_id=eq.${user.id}` }, payload => {
+        console.log('Realtime payload:', payload);
+        // On insert or delete, refetch latest data
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        console.warn('Error removing supabase channel', e);
+      }
+    };
+  }, [user]);
+
 
   const fetchData = async () => {
     if (!user) return;
