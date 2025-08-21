@@ -269,30 +269,24 @@ const Profile = () => {
                 </SelectContent>
               </Select>
             </div>
-            {Object.keys(attendanceStats).length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(SUBJECT_TOTALS[group]).map(([subject, total]) => {
-                  const attended = attendanceStats[subject] || 0;
-                  const percent = total > 0 ? Math.round((attended / total) * 100) : null;
-                  return (
-                    <div key={subject} className="text-center p-4 bg-muted/50 rounded-lg">
-                      <BookOpen className="h-6 w-6 mx-auto mb-2 text-primary" />
-                      <p className="font-semibold">{subject}</p>
-                      <p className="text-2xl font-bold text-primary">{attended} / {total}</p>
-                      {percent !== null ? (
-                        <p className="text-lg font-semibold text-green-700">{percent}%</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">No lectures scheduled</p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-8">
-                No attendance records found. Start marking your attendance from the dashboard!
-              </p>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Object.entries(SUBJECT_TOTALS[group]).map(([subject, total]) => {
+                const attended = attendanceStats[subject] || 0;
+                const percent = total > 0 ? Math.round((attended / total) * 100) : 0;
+                return (
+                  <div key={subject} className="text-center p-4 bg-muted/50 rounded-lg">
+                    <BookOpen className="h-6 w-6 mx-auto mb-2 text-primary" />
+                    <p className="font-semibold">{subject}</p>
+                    <p className="text-2xl font-bold text-primary">{attended} / {total}</p>
+                    {total > 0 ? (
+                      <p className="text-lg font-semibold text-green-700">{percent}%</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No lectures scheduled</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 
