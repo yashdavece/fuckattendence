@@ -95,9 +95,7 @@ const Index = () => {
             >
               Get Started Now
             </Button>
-            <p className="text-sm text-muted-foreground">
-              Free to use • No credit card required
-            </p>
+            
           </div>
         </div>
       </div>
