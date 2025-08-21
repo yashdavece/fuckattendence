@@ -42,8 +42,7 @@ const Index = () => {
               Student Attendance Tracker
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Simple, efficient, and reliable way to track your class attendance. 
-              Never miss marking your presence again.
+              Made for SVIT students so they don't fuck their attendence
             </p>
           </div>
 
