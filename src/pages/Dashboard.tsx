@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useNavigate } from 'react-router-dom';
+import { SUBJECT_CODE_MAP, SUBJECT_TOTALS } from '@/lib/subjects';
 
 const subjects = [
   { name: 'CN', fullName: 'Computer Networks', icon: Monitor, color: 'bg-blue-500' },
@@ -40,10 +41,57 @@ const Dashboard = () => {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+
+  // Fetch current counts per subject for this user to determine disabled state
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('attendance')
+      .select('subject', { head: false })
+      .eq('student_id', user.id)
+      .then(({ data, error }) => {
+        if (error) return;
+        const map: Record<string, number> = {};
+        (data || []).forEach((row: any) => {
+          const key = (row.subject || '').toString();
+          map[key] = (map[key] || 0) + 1;
+        });
+        setCounts(map);
+      });
+  }, [user]);
 
   const handleSubjectClick = (subjectName: string) => {
-    setSelectedSubject(subjectName);
-    setIsModalOpen(true);
+    // Set modal only after capacity check
+    // Check current attended count for this subject for the current user
+    if (!user) return;
+    setLoading(true);
+    const subjectKey = SUBJECT_CODE_MAP[subjectName] || subjectName;
+    const group = (() => {
+      try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; }
+    })();
+    const total = SUBJECT_TOTALS[group]?.[subjectKey] ?? 0;
+    // Count existing attendance rows for this user & subject
+    supabase
+      .from('attendance')
+      .select('id', { count: 'exact', head: false })
+      .eq('student_id', user.id)
+      .eq('subject', subjectName)
+      .then(({ data, error, count }) => {
+        setLoading(false);
+        const attended = count || 0;
+        if (total > 0 && attended >= total) {
+          // already at max
+          toast({
+            title: 'Max Attendance',
+            description: `${subjectName} has already reached maximum attendance (${attended}/${total}).`,
+            variant: 'destructive'
+          });
+        } else {
+          setSelectedSubject(subjectName);
+          setIsModalOpen(true);
+        }
+      });
   };
 
   const handleAttendanceConfirm = async () => {
@@ -52,6 +100,22 @@ const Dashboard = () => {
     setLoading(true);
     
     try {
+      // Double check current attendance count to avoid surpassing max
+      const subjectKey = SUBJECT_CODE_MAP[selectedSubject] || selectedSubject;
+      const group = (() => { try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; } })();
+      const total = SUBJECT_TOTALS[group]?.[subjectKey] ?? 0;
+      const countRes = await supabase.from('attendance').select('id', { count: 'exact', head: false })
+        .eq('student_id', user.id)
+        .eq('subject', selectedSubject);
+      const current = countRes.count || 0;
+      if (total > 0 && current >= total) {
+        toast({ title: 'Max reached', description: `Cannot mark ${selectedSubject}, already ${current}/${total}.`, variant: 'destructive' });
+        setLoading(false);
+        setIsModalOpen(false);
+        setSelectedSubject(null);
+        return;
+      }
+
       const { error } = await supabase
         .from('attendance')
         .insert({
@@ -154,6 +218,14 @@ const Dashboard = () => {
                   <Button 
                     className="mt-4 w-full group-hover:bg-primary/90 transition-colors" 
                     size="sm"
+                    onClick={() => handleSubjectClick(subject.name)}
+                    disabled={(() => {
+                      const subjectKey = SUBJECT_CODE_MAP[subject.name] || subject.name;
+                      const group = (() => { try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; } })();
+                      const total = SUBJECT_TOTALS[group]?.[subjectKey] ?? 0;
+                      const current = counts[subject.name] || 0;
+                      return total > 0 && current >= total;
+                    })()}
                   >
                     Mark Attendance
                   </Button>

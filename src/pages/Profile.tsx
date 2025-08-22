@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GROUPS, SUBJECT_TOTALS, SUBJECT_CODE_MAP } from '@/lib/subjects';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -44,50 +45,7 @@ interface Profile {
   user_id: string;
 }
 
-const GROUPS = [
-  { label: 'TY CE-1', value: 'TY CE-1' },
-  { label: 'TY CE-2', value: 'TY CE-2' },
-  { label: 'TY CE-3', value: 'TY CE-3' },
-];
 
-const SUBJECT_TOTALS: Record<string, Record<string, number>> = {
-  'TY CE-1': {
-    'Analysis & Design of Algorithm (ADA)': 22,
-    'Computer Network (CN)': 21,
-    'Software Engineering (SE)': 16,
-    'Elective (PDS/CS)': 11,
-    'Professional Ethics (PEM)': 16,
-    'Contributor Personality Dev Pr (CPDP)': 16,
-    'Design Engineering (DE)': 0,
-  },
-  'TY CE-2': {
-    'Analysis & Design of Algorithm (ADA)': 22,
-    'Computer Network (CN)': 22,
-    'Software Engineering (SE)': 15,
-    'Elective (PDS/CS)': 11,
-    'Professional Ethics (PEM)': 16,
-    'Contributor Personality Dev Pr (CPDP)': 10,
-    'Design Engineering (DE)': 0,
-  },
-  'TY CE-3': {
-    'Analysis & Design of Algorithm (ADA)': 21,
-    'Computer Network (CN)': 22,
-    'Software Engineering (SE)': 16,
-    'Elective (PDS/CS)': 11,
-    'Professional Ethics (PEM)': 12,
-    'Contributor Personality Dev Pr (CPDP)': 10,
-    'Design Engineering (DE)': 0,
-  },
-};
-
-const SUBJECT_CODE_MAP: Record<string, string> = {
-  'CN': 'Computer Network (CN)',
-  'ADA': 'Analysis & Design of Algorithm (ADA)',
-  'SE': 'Software Engineering (SE)',
-  'PE': 'Professional Ethics (PEM)',
-  'CPDP': 'Contributor Personality Dev Pr (CPDP)',
-  'CS/PYTHON': 'Elective (PDS/CS)',
-};
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -96,7 +54,16 @@ const Profile = () => {
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [group, setGroup] = useState<string>('TY CE-1');
+  const [group, setGroup] = useState<string>(() => {
+    try {
+      return localStorage.getItem('student_group') || 'TY CE-1';
+    } catch (e) {
+      return 'TY CE-1';
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('student_group', group); } catch (e) {}
+  }, [group]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
@@ -166,7 +133,8 @@ const Profile = () => {
   const getAttendanceStats = () => {
     const stats: { [key: string]: number } = {};
     attendanceRecords.forEach(record => {
-      const key = SUBJECT_CODE_MAP[record.subject] || record.subject;
+      const raw = (record.subject || '').toString().trim().toUpperCase();
+      const key = SUBJECT_CODE_MAP[raw] || record.subject;
       stats[key] = (stats[key] || 0) + 1;
     });
     return stats;
@@ -319,7 +287,8 @@ const Profile = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(SUBJECT_TOTALS[group]).map(([subject, total]) => {
-                const attended = attendanceStats[subject] || 0;
+                const rawAttended = attendanceStats[subject] || 0;
+                const attended = Math.min(rawAttended, total);
                 const percent = total > 0 ? Math.round((attended / total) * 100) : 0;
                 return (
                   <div key={subject} className="text-center p-4 bg-muted/50 rounded-lg">
@@ -363,7 +332,7 @@ const Profile = () => {
                         <TableCell className="font-medium">
                           {formatDate(record.date)}
                         </TableCell>
-                        <TableCell>{SUBJECT_CODE_MAP[record.subject] || record.subject}</TableCell>
+                        <TableCell>{SUBJECT_CODE_MAP[(record.subject || '').toString().trim().toUpperCase()] || record.subject}</TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
