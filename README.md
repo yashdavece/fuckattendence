@@ -159,7 +159,5 @@ Remove or change that index if you want to allow multiple marks per day.
 
 ---
 
-If you want, I can also:
-- Generate a `README` that includes step-by-step Supabase setup (creating tables, enabling RLS, applying migrations), or
-- Persist the selected group in the database and wire the UI to it.
+
 
