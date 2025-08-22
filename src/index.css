@@ -103,3 +103,41 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Responsive container utility used across pages */
+@layer utilities {
+  .container {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @screen sm {
+    .container {
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+    }
+  }
+
+  @screen md {
+    .container {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  /* Improve card stacking on small screens */
+  .responsive-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @screen md {
+    .responsive-grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+}

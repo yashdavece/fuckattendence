@@ -304,10 +304,10 @@ const Profile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 flex items-center gap-4">
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-4">
               <span className="font-medium">Select Your Group:</span>
               <Select value={group} onValueChange={setGroup}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full md:w-[160px]">
                   <SelectValue placeholder="Select group" />
                 </SelectTrigger>
                 <SelectContent>
@@ -348,8 +348,8 @@ const Profile = () => {
           </CardHeader>
           <CardContent>
             {attendanceRecords.length > 0 ? (
-              <div className="rounded-lg border overflow-hidden">
-                <Table>
+              <div className="rounded-lg border overflow-x-auto">
+                <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
