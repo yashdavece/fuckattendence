@@ -66,6 +66,7 @@ const Profile = () => {
   }, [group]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -183,6 +184,39 @@ const Profile = () => {
     } finally {
       setSelectedRecord(null);
       setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!user) return;
+    try {
+      // Delete all attendance rows for this user
+      const { error, data } = await supabase
+        .from('attendance')
+        .delete()
+        .eq('student_id', user.id);
+      if (error) throw error;
+
+      // Clear local state so UI updates immediately
+      setAttendanceRecords([]);
+      toast({
+        title: 'All records deleted',
+        description: 'All your attendance records were deleted successfully.',
+      });
+
+      // Fetch authoritative data from DB to ensure consistency
+      try {
+        await fetchData();
+      } catch (e) {
+        console.warn('Error refetching after delete all', e);
+      }
+    } catch (error: any) {
+      console.error('Delete all error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete all attendance records',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -312,7 +346,17 @@ const Profile = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Calendar className="h-6 w-6" />
-              <span>Attendance History</span>
+                <span>Attendance History</span>
+                <div className="ml-4">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteAllDialogOpen(true)}
+                    disabled={attendanceRecords.length === 0}
+                  >
+                    Delete All
+                  </Button>
+                </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -364,6 +408,28 @@ const Profile = () => {
                       <AlertDialogCancel onClick={() => setSelectedRecord(null)}>Cancel</AlertDialogCancel>
                       <AlertDialogAction onClick={handleDeleteAttendance} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                         Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Delete All Confirmation Dialog */}
+                <AlertDialog open={deleteAllDialogOpen} onOpenChange={setDeleteAllDialogOpen}>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete All Attendance Records</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete all your attendance records across the site and cannot be undone. Are you sure you want to proceed?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel onClick={() => setDeleteAllDialogOpen(false)}>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={async () => {
+                        // call handler inline to keep dialog close behavior consistent
+                        setDeleteAllDialogOpen(false);
+                        await handleDeleteAll();
+                      }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete All
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
