@@ -201,6 +201,14 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {subjects.map((subject) => {
             const Icon = subject.icon;
+            // compute subject-specific stats for display
+            const subjectKey = SUBJECT_CODE_MAP[subject.name] || subject.name;
+            const group = (() => { try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; } })();
+            const total = SUBJECT_TOTALS[group]?.[subjectKey] ?? 0;
+            const current = counts[subject.name] || 0;
+            const attended = total > 0 ? Math.min(current, total) : current;
+            const percent = total > 0 ? Math.round((attended / total) * 100) : 0;
+
             return (
               <Card 
                 key={subject.name}
@@ -215,16 +223,30 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-sm text-muted-foreground">{subject.fullName}</p>
+
+                  {/* Attendance summary: attended / total and a small progress bar */}
+                  <div className="mt-3">
+                    <div className="text-sm text-muted-foreground">
+                      {total > 0 ? `${attended}/${total} attended` : `${attended} attended`}
+                    </div>
+                    {total > 0 && (
+                      <>
+                        <div className="w-full h-2 bg-gray-200 rounded mt-2 overflow-hidden">
+                          <div className="h-2 bg-primary rounded" style={{ width: `${percent}%` }} />
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">{percent}%</div>
+                      </>
+                    )}
+                  </div>
+
                   <Button 
                     className="mt-4 w-full group-hover:bg-primary/90 transition-colors" 
                     size="sm"
                     onClick={() => handleSubjectClick(subject.name)}
                     disabled={(() => {
-                      const subjectKey = SUBJECT_CODE_MAP[subject.name] || subject.name;
-                      const group = (() => { try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; } })();
-                      const total = SUBJECT_TOTALS[group]?.[subjectKey] ?? 0;
-                      const current = counts[subject.name] || 0;
-                      return total > 0 && current >= total;
+                      const totalCheck = total;
+                      const currentCheck = current;
+                      return totalCheck > 0 && currentCheck >= totalCheck;
                     })()}
                   >
                     Mark Attendance
