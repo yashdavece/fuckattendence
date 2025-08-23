@@ -44,21 +44,48 @@ const Dashboard = () => {
   const [counts, setCounts] = useState<Record<string, number>>({});
 
   // Fetch current counts per subject for this user to determine disabled state
+  const fetchCounts = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('subject', { head: false })
+        .eq('student_id', user.id);
+      if (error) return;
+      const map: Record<string, number> = {};
+      (data || []).forEach((row: any) => {
+        const key = (row.subject || '').toString();
+        map[key] = (map[key] || 0) + 1;
+      });
+      setCounts(map);
+    } catch (e) {
+      console.warn('fetchCounts error', e);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('attendance')
-      .select('subject', { head: false })
-      .eq('student_id', user.id)
-      .then(({ data, error }) => {
-        if (error) return;
-        const map: Record<string, number> = {};
-        (data || []).forEach((row: any) => {
-          const key = (row.subject || '').toString();
-          map[key] = (map[key] || 0) + 1;
-        });
-        setCounts(map);
-      });
+    fetchCounts();
+  }, [user]);
+
+  // Realtime subscription: update counts when attendance changes for this user
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase.channel('public:attendance')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance', filter: `student_id=eq.${user.id}` }, payload => {
+        console.log('Dashboard realtime payload:', payload);
+        // refresh counts to keep subject cards in sync
+        fetchCounts();
+      })
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {
+        console.warn('Error removing supabase channel', e);
+      }
+    };
   }, [user]);
 
   const handleSubjectClick = (subjectName: string) => {
@@ -139,6 +166,8 @@ const Dashboard = () => {
           title: "Attendance Marked!",
           description: `Successfully marked attendance for ${selectedSubject}`,
         });
+  // Optimistically update local counts so the subject card updates immediately
+  setCounts(prev => ({ ...prev, [selectedSubject]: (prev[selectedSubject] || 0) + 1 }));
       }
     } catch (error: any) {
       toast({
