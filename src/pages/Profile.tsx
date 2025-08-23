@@ -257,7 +257,7 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Navigation Bar */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-border/50 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center">
           <Button
             variant="ghost"
             onClick={() => navigate('/dashboard')}
@@ -274,7 +274,7 @@ const Profile = () => {
         </div>
       </nav>
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
         {/* Profile Info Card */}
         <Card className="mb-8 bg-white/80 backdrop-blur-sm border-0">
           <CardHeader>
@@ -361,8 +361,10 @@ const Profile = () => {
           </CardHeader>
           <CardContent>
             {attendanceRecords.length > 0 ? (
-              <div className="rounded-lg border overflow-x-auto">
-                <Table className="min-w-[600px]">
+                <>
+                  {/* Desktop / tablet table */}
+                  <div className="rounded-lg border overflow-x-auto hidden md:block">
+                    <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
@@ -393,7 +395,33 @@ const Profile = () => {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                  </Table>
+                </div>
+
+                {/* Mobile stacked list */}
+                <div className="md:hidden space-y-3">
+                  {attendanceRecords.map((record) => (
+                    <div key={record.id} className="p-4 bg-white/80 backdrop-blur-sm rounded-lg border flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-muted-foreground">{formatDate(record.date)}</div>
+                        <div className="font-medium">{SUBJECT_CODE_MAP[(record.subject || '').toString().trim().toUpperCase()] || record.subject}</div>
+                      </div>
+                      <div className="ml-4 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRecord(record);
+                            setDeleteDialogOpen(true);
+                          }}
+                          className="text-destructive hover:text-destructive/90"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
                 {/* Delete Confirmation Dialog */}
                 <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

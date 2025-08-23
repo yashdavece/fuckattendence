@@ -197,13 +197,13 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Navigation Bar */}
       <nav className="bg-white/80 backdrop-blur-sm border-b border-border/50 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center">
           <div className="flex items-center space-x-2">
             <BookOpen className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold text-foreground">Attendance Tracker</h1>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 mt-3 sm:mt-0">
             <Button
               variant="outline"
               onClick={() => navigate('/profile')}
@@ -227,13 +227,14 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
+  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">Welcome Back!</h2>
           <p className="text-muted-foreground">Click on a subject to mark your attendance</p>
         </div>
 
-        {/* Subject Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+  {/* Subject Cards Grid */}
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {subjects.map((subject) => {
             const Icon = subject.icon;
             // compute subject-specific stats for display
