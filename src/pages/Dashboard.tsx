@@ -225,8 +225,7 @@ const Dashboard = () => {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+    {/* Main Content */}
   <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">Welcome Back!</h2>

@@ -462,7 +462,7 @@ const Profile = () => {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </div>
+                </>
             ) : (
               <div className="text-center py-12">
                 <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
