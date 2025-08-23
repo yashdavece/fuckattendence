@@ -166,8 +166,14 @@ const Dashboard = () => {
           title: "Attendance Marked!",
           description: `Successfully marked attendance for ${selectedSubject}`,
         });
-  // Optimistically update local counts so the subject card updates immediately
-  setCounts(prev => ({ ...prev, [selectedSubject]: (prev[selectedSubject] || 0) + 1 }));
+        // Optimistically update local counts so the subject card updates immediately
+        setCounts(prev => ({ ...prev, [selectedSubject]: (prev[selectedSubject] || 0) + 1 }));
+        // Also refresh authoritative counts from the DB to ensure sync with server
+        try {
+          await fetchCounts();
+        } catch (e) {
+          console.warn('Failed to refresh counts after insert', e);
+        }
       }
     } catch (error: any) {
       toast({
