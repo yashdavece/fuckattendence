@@ -25,6 +25,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { SUBJECT_CODE_MAP, SUBJECT_TOTALS } from '@/lib/subjects';
 import { useStudentTotals } from '@/hooks/useStudentTotals';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 const subjects = [
   { name: 'CN', fullName: 'Computer Networks', icon: Monitor, color: 'bg-blue-500' },
@@ -44,6 +46,10 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const { totals: overrideTotals } = useStudentTotals(user?.id);
+  const { upsert: upsertTotal } = useStudentTotals(user?.id);
+  const [editTotalDialogOpen, setEditTotalDialogOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<string | null>(null);
+  const [editingTotalValue, setEditingTotalValue] = useState<number | string>('');
 
   // Fetch current counts per subject for this user to determine disabled state
   const fetchCounts = async () => {
@@ -290,11 +296,49 @@ const Dashboard = () => {
                   >
                     Mark Attendance
                   </Button>
+                  <div className="mt-2 flex justify-between items-center">
+                    <button className="text-xs text-muted-foreground underline" onClick={(e) => { e.stopPropagation(); setEditingSubject(subjectKey); setEditingTotalValue(total); setEditTotalDialogOpen(true); }}>Edit Total</button>
+                    {typeof override === 'number' && <span className="text-xs text-muted-foreground">overridden</span>}
+                  </div>
                 </CardContent>
               </Card>
             );
           })}
         </div>
+        {/* Edit Total Dialog placed in Dashboard so users can edit totals here */}
+        <Dialog open={editTotalDialogOpen} onOpenChange={setEditTotalDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Subject Total</DialogTitle>
+            </DialogHeader>
+            <div className="py-2">
+              <label className="block text-sm text-muted-foreground">Subject</label>
+              <div className="font-medium mb-2">{editingSubject}</div>
+              <label className="block text-sm text-muted-foreground">Total Lectures</label>
+              <Input type="number" value={editingTotalValue} onChange={(e: any) => setEditingTotalValue(Number(e.target.value))} />
+            </div>
+            <DialogFooter>
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={() => setEditTotalDialogOpen(false)}>Cancel</Button>
+                <Button onClick={async () => {
+                  if (!editingSubject) return;
+                  const parsed = Number(editingTotalValue) || 0;
+                  try {
+                    await upsertTotal(editingSubject, (() => { try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; } })(), parsed);
+                    // refresh counts authoritative
+                    await fetchCounts();
+                    setEditTotalDialogOpen(false);
+                    setEditingSubject(null);
+                    setEditingTotalValue('');
+                    toast({ title: 'Saved', description: 'Total updated' });
+                  } catch (e: any) {
+                    toast({ title: 'Error', description: e.message || 'Failed to save total', variant: 'destructive' });
+                  }
+                }}>Save</Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Attendance Confirmation Modal */}

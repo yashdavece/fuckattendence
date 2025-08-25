@@ -6,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GROUPS, SUBJECT_TOTALS, SUBJECT_CODE_MAP } from '@/lib/subjects';
 import { useStudentTotals } from '@/hooks/useStudentTotals';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -70,9 +68,7 @@ const Profile = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
-  const [editTotalDialogOpen, setEditTotalDialogOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState<string | null>(null);
-  const [editingTotalValue, setEditingTotalValue] = useState<number | string>('');
+  
 
   useEffect(() => {
     if (user) {
@@ -80,7 +76,7 @@ const Profile = () => {
     }
   }, [user]);
 
-  const { totals: overrideTotals, upsert: upsertTotal } = useStudentTotals(user?.id);
+  const { totals: overrideTotals } = useStudentTotals(user?.id);
 
   // Realtime subscription to attendance changes for the current user
   useEffect(() => {
@@ -329,7 +325,7 @@ const Profile = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(SUBJECT_TOTALS[group]).map(([subject, total]) => {
-                // allow per-user override of total
+                // allow per-user override of total (read-only here)
                 const override = overrideTotals[subject];
                 const effectiveTotal = typeof override === 'number' ? override : total;
                 const rawAttended = attendanceStats[subject] || 0;
@@ -340,14 +336,11 @@ const Profile = () => {
                     <BookOpen className="h-6 w-6 mx-auto mb-2 text-primary" />
                     <p className="font-semibold">{subject}</p>
                     <p className="text-2xl font-bold text-primary">{attended} / {effectiveTotal}</p>
-                    <div className="mt-2 flex items-center justify-center space-x-2">
-                      <button className="text-sm underline" onClick={() => {
-                        setEditingSubject(subject);
-                        setEditingTotalValue(effectiveTotal);
-                        setEditTotalDialogOpen(true);
-                      }}>Edit Total</button>
-                      <span className="text-xs text-muted-foreground">(override)</span>
-                    </div>
+                    {typeof override === 'number' && (
+                      <div className="mt-2">
+                        <span className="text-xs text-muted-foreground">(overridden)</span>
+                      </div>
+                    )}
                     {total > 0 ? (
                       <p className="text-lg font-semibold text-green-700">{percent}%</p>
                     ) : (
