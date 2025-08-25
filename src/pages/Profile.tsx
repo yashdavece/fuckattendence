@@ -353,40 +353,7 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Edit Total Dialog */}
-        <Dialog open={editTotalDialogOpen} onOpenChange={setEditTotalDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Subject Total</DialogTitle>
-            </DialogHeader>
-            <div className="py-2">
-              <label className="block text-sm text-muted-foreground">Subject</label>
-              <div className="font-medium mb-2">{editingSubject}</div>
-              <label className="block text-sm text-muted-foreground">Total Lectures</label>
-              <Input type="number" value={editingTotalValue} onChange={(e: any) => setEditingTotalValue(Number(e.target.value))} />
-            </div>
-            <DialogFooter>
-              <div className="flex space-x-2">
-                <Button variant="outline" onClick={() => setEditTotalDialogOpen(false)}>Cancel</Button>
-                <Button onClick={async () => {
-                  if (!editingSubject) return;
-                  const parsed = Number(editingTotalValue) || 0;
-                  try {
-                    await upsertTotal(editingSubject, group, parsed);
-                    // refetch attendance data to recalc percentages
-                    await fetchData();
-                    setEditTotalDialogOpen(false);
-                    setEditingSubject(null);
-                    setEditingTotalValue('');
-                    toast({ title: 'Saved', description: 'Total updated' });
-                  } catch (e: any) {
-                    toast({ title: 'Error', description: e.message || 'Failed to save total', variant: 'destructive' });
-                  }
-                }}>Save</Button>
-              </div>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
 
         {/* Attendance History Table */}
         <Card className="bg-white/80 backdrop-blur-sm border-0">
