@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GROUPS, SUBJECT_TOTALS, SUBJECT_CODE_MAP } from '@/lib/subjects';
+import { useStudentTotals } from '@/hooks/useStudentTotals';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -67,12 +70,17 @@ const Profile = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [editTotalDialogOpen, setEditTotalDialogOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<string | null>(null);
+  const [editingTotalValue, setEditingTotalValue] = useState<number | string>('');
 
   useEffect(() => {
     if (user) {
       fetchData();
     }
   }, [user]);
+
+  const { totals: overrideTotals, upsert: upsertTotal } = useStudentTotals(user?.id);
 
   // Realtime subscription to attendance changes for the current user
   useEffect(() => {
@@ -321,14 +329,25 @@ const Profile = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(SUBJECT_TOTALS[group]).map(([subject, total]) => {
+                // allow per-user override of total
+                const override = overrideTotals[subject];
+                const effectiveTotal = typeof override === 'number' ? override : total;
                 const rawAttended = attendanceStats[subject] || 0;
-                const attended = Math.min(rawAttended, total);
-                const percent = total > 0 ? Math.round((attended / total) * 100) : 0;
+                const attended = Math.min(rawAttended, effectiveTotal);
+                const percent = effectiveTotal > 0 ? Math.round((attended / effectiveTotal) * 100) : 0;
                 return (
                   <div key={subject} className="text-center p-4 bg-muted/50 rounded-lg">
                     <BookOpen className="h-6 w-6 mx-auto mb-2 text-primary" />
                     <p className="font-semibold">{subject}</p>
-                    <p className="text-2xl font-bold text-primary">{attended} / {total}</p>
+                    <p className="text-2xl font-bold text-primary">{attended} / {effectiveTotal}</p>
+                    <div className="mt-2 flex items-center justify-center space-x-2">
+                      <button className="text-sm underline" onClick={() => {
+                        setEditingSubject(subject);
+                        setEditingTotalValue(effectiveTotal);
+                        setEditTotalDialogOpen(true);
+                      }}>Edit Total</button>
+                      <span className="text-xs text-muted-foreground">(override)</span>
+                    </div>
                     {total > 0 ? (
                       <p className="text-lg font-semibold text-green-700">{percent}%</p>
                     ) : (
@@ -340,6 +359,41 @@ const Profile = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Total Dialog */}
+        <Dialog open={editTotalDialogOpen} onOpenChange={setEditTotalDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Subject Total</DialogTitle>
+            </DialogHeader>
+            <div className="py-2">
+              <label className="block text-sm text-muted-foreground">Subject</label>
+              <div className="font-medium mb-2">{editingSubject}</div>
+              <label className="block text-sm text-muted-foreground">Total Lectures</label>
+              <Input type="number" value={editingTotalValue} onChange={(e: any) => setEditingTotalValue(Number(e.target.value))} />
+            </div>
+            <DialogFooter>
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={() => setEditTotalDialogOpen(false)}>Cancel</Button>
+                <Button onClick={async () => {
+                  if (!editingSubject) return;
+                  const parsed = Number(editingTotalValue) || 0;
+                  try {
+                    await upsertTotal(editingSubject, group, parsed);
+                    // refetch attendance data to recalc percentages
+                    await fetchData();
+                    setEditTotalDialogOpen(false);
+                    setEditingSubject(null);
+                    setEditingTotalValue('');
+                    toast({ title: 'Saved', description: 'Total updated' });
+                  } catch (e: any) {
+                    toast({ title: 'Error', description: e.message || 'Failed to save total', variant: 'destructive' });
+                  }
+                }}>Save</Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Attendance History Table */}
         <Card className="bg-white/80 backdrop-blur-sm border-0">

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useNavigate } from 'react-router-dom';
 import { SUBJECT_CODE_MAP, SUBJECT_TOTALS } from '@/lib/subjects';
+import { useStudentTotals } from '@/hooks/useStudentTotals';
 
 const subjects = [
   { name: 'CN', fullName: 'Computer Networks', icon: Monitor, color: 'bg-blue-500' },
@@ -42,6 +43,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const { totals: overrideTotals } = useStudentTotals(user?.id);
 
   // Fetch current counts per subject for this user to determine disabled state
   const fetchCounts = async () => {
@@ -239,7 +241,9 @@ const Dashboard = () => {
             // compute subject-specific stats for display
             const subjectKey = SUBJECT_CODE_MAP[subject.name] || subject.name;
             const group = (() => { try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; } })();
-            const total = SUBJECT_TOTALS[group]?.[subjectKey] ?? 0;
+            const baseTotal = SUBJECT_TOTALS[group]?.[subjectKey] ?? 0;
+            const override = overrideTotals[subjectKey];
+            const total = typeof override === 'number' ? override : baseTotal;
             const current = counts[subject.name] || 0;
             const attended = total > 0 ? Math.min(current, total) : current;
             const percent = total > 0 ? Math.round((attended / total) * 100) : 0;
