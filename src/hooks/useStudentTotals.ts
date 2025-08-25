@@ -30,6 +30,21 @@ export function useStudentTotals(userId?: string) {
 
   useEffect(() => { fetch(); }, [fetch]);
 
+  // Realtime subscription to keep totals in sync across open tabs/components
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase.channel('public:student_subject_totals')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_subject_totals', filter: `student_id=eq.${userId}` }, payload => {
+        // On any change for this user's totals, refetch
+        fetch();
+      })
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch (e) { console.warn('removeChannel error', e); }
+    };
+  }, [userId, fetch]);
+
   const upsert = async (subject: string, groupName: string, total: number) => {
     if (!userId) throw new Error('No user id');
     const { error } = await supabase

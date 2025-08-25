@@ -45,8 +45,10 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const { totals: overrideTotals } = useStudentTotals(user?.id);
-  const { upsert: upsertTotal } = useStudentTotals(user?.id);
+  // single hook instance for totals (keeps realtime + upsert consistent)
+  const studentTotalsHook = useStudentTotals(user?.id);
+  const { totals: overrideTotals } = studentTotalsHook;
+  const { upsert: upsertTotal } = studentTotalsHook;
   const [editTotalDialogOpen, setEditTotalDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<string | null>(null);
   const [editingTotalValue, setEditingTotalValue] = useState<number | string>('');
@@ -284,21 +286,29 @@ const Dashboard = () => {
                     )}
                   </div>
 
-                  <Button 
-                    className="mt-4 w-full group-hover:bg-primary/90 transition-colors" 
-                    size="sm"
-                    onClick={() => handleSubjectClick(subject.name)}
-                    disabled={(() => {
-                      const totalCheck = total;
-                      const currentCheck = current;
-                      return totalCheck > 0 && currentCheck >= totalCheck;
-                    })()}
-                  >
-                    Mark Attendance
-                  </Button>
-                  <div className="mt-2 flex justify-between items-center">
-                    <button className="text-xs text-muted-foreground underline" onClick={(e) => { e.stopPropagation(); setEditingSubject(subjectKey); setEditingTotalValue(total); setEditTotalDialogOpen(true); }}>Edit Total</button>
-                    {typeof override === 'number' && <span className="text-xs text-muted-foreground">overridden</span>}
+                  <div className="space-y-2">
+                    <Button 
+                      className="mt-4 w-full group-hover:bg-primary/90 transition-colors" 
+                      size="sm"
+                      onClick={() => handleSubjectClick(subject.name)}
+                      disabled={(() => {
+                        const totalCheck = total;
+                        const currentCheck = current;
+                        return totalCheck > 0 && currentCheck >= totalCheck;
+                      })()}
+                    >
+                      Mark Attendance
+                    </Button>
+
+                    <Button 
+                      variant="outline"
+                      className="w-full"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); setEditingSubject(subjectKey); setEditingTotalValue(total); setEditTotalDialogOpen(true); }}
+                    >
+                      Edit Total
+                    </Button>
+                    {typeof override === 'number' && <div className="text-xs text-muted-foreground text-center">overridden</div>}
                   </div>
                 </CardContent>
               </Card>
