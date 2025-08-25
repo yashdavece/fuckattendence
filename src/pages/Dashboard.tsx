@@ -45,6 +45,7 @@ const Dashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [editSaving, setEditSaving] = useState(false);
   // single hook instance for totals (keeps realtime + upsert consistent)
   const studentTotalsHook = useStudentTotals(user?.id);
   const { totals: overrideTotals } = studentTotalsHook;
@@ -259,7 +260,7 @@ const Dashboard = () => {
             return (
               <Card 
                 key={subject.name}
-                className="group cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg border-0 bg-white/80 backdrop-blur-sm"
+                className="group cursor-pointer transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm"
                 onClick={() => handleSubjectClick(subject.name)}
               >
                 <CardHeader className="text-center pb-4">
@@ -317,34 +318,72 @@ const Dashboard = () => {
         </div>
         {/* Edit Total Dialog placed in Dashboard so users can edit totals here */}
         <Dialog open={editTotalDialogOpen} onOpenChange={setEditTotalDialogOpen}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-lg w-full">
             <DialogHeader>
-              <DialogTitle>Edit Subject Total</DialogTitle>
+              <DialogTitle className="text-lg">Edit Subject Total</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">Change the total number of lectures for this subject — percentages will update across the dashboard and profile.</DialogDescription>
             </DialogHeader>
-            <div className="py-2">
-              <label className="block text-sm text-muted-foreground">Subject</label>
-              <div className="font-medium mb-2">{editingSubject}</div>
-              <label className="block text-sm text-muted-foreground">Total Lectures</label>
-              <Input type="number" value={editingTotalValue} onChange={(e: any) => setEditingTotalValue(Number(e.target.value))} />
+
+            <div className="py-4">
+              <div className="mb-3">
+                <label className="text-sm text-muted-foreground block">Subject</label>
+                <div className="font-semibold text-foreground">{editingSubject}</div>
+              </div>
+
+              <div className="mb-3">
+                <label className="text-sm text-muted-foreground block">Total Lectures</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={editingTotalValue}
+                  onChange={(e: any) => setEditingTotalValue(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground mt-2">Set to 0 to indicate no scheduled lectures. Changes apply immediately.</p>
+              </div>
             </div>
+
             <DialogFooter>
-              <div className="flex space-x-2">
-                <Button variant="outline" onClick={() => setEditTotalDialogOpen(false)}>Cancel</Button>
-                <Button onClick={async () => {
-                  if (!editingSubject) return;
-                  const parsed = Number(editingTotalValue) || 0;
-                  try {
-                    await upsertTotal(editingSubject, (() => { try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; } })(), parsed);
-                    // refresh counts authoritative
-                    await fetchCounts();
-                    setEditTotalDialogOpen(false);
-                    setEditingSubject(null);
-                    setEditingTotalValue('');
-                    toast({ title: 'Saved', description: 'Total updated' });
-                  } catch (e: any) {
-                    toast({ title: 'Error', description: e.message || 'Failed to save total', variant: 'destructive' });
-                  }
-                }}>Save</Button>
+              <div className="flex w-full justify-between items-center">
+                <Button variant="outline" onClick={() => { setEditTotalDialogOpen(false); setEditingSubject(null); setEditingTotalValue(''); }}>
+                  Cancel
+                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={async () => {
+                      if (!editingSubject) return;
+                      const parsed = Number(editingTotalValue);
+                      if (Number.isNaN(parsed) || parsed < 0) {
+                        toast({ title: 'Invalid value', description: 'Please enter a valid number >= 0', variant: 'destructive' });
+                        return;
+                      }
+                      try {
+                        // show saving state
+                        setEditSaving(true);
+                        await upsertTotal(editingSubject, (() => { try { return localStorage.getItem('student_group') || 'TY CE-1'; } catch (e) { return 'TY CE-1'; } })(), parsed);
+                        await fetchCounts();
+                        toast({ title: 'Saved', description: 'Total updated' });
+                        setEditTotalDialogOpen(false);
+                        setEditingSubject(null);
+                        setEditingTotalValue('');
+                      } catch (e: any) {
+                        toast({ title: 'Error', description: e.message || 'Failed to save total', variant: 'destructive' });
+                      } finally {
+                        setEditSaving(false);
+                      }
+                    }}
+                    disabled={editSaving}
+                  >
+                    {editSaving ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+                        <span>Saving...</span>
+                      </div>
+                    ) : (
+                      'Save'
+                    )}
+                  </Button>
+                </div>
               </div>
             </DialogFooter>
           </DialogContent>
