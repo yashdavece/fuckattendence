@@ -22,10 +22,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 import { useNavigate } from 'react-router-dom';
 import { SUBJECT_CODE_MAP, SUBJECT_TOTALS } from '@/lib/subjects';
 import { useStudentTotals } from '@/hooks/useStudentTotals';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
 const subjects = [
@@ -238,6 +238,16 @@ const Dashboard = () => {
 
     {/* Main Content */}
   <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {/* Announcement Banner */}
+<div className="bg-red-600 text-white text-center py-3 px-4 mb-6 rounded-md shadow-md">
+  <strong>Important:</strong> The old website will be shut down after <strong>1 month</strong>. 
+  All data before <strong>04/08/2025</strong> has been migrated to the new website: 
+  <a href="https://bunkstop.vercel.app" className="underline font-semibold" target="_blank" rel="noopener noreferrer">
+    BunkStop
+  </a>. 
+  Please reset your password using the email sent to your registered address to access the new platform.
+</div>
+
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">Welcome Back!</h2>
           <p className="text-muted-foreground">Click on a subject to mark your attendance</p>
